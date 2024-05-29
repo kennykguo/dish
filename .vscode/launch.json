@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/kenny/Developer/vscode/dish-linux",
-      "program": "/Users/kenny/Developer/vscode/dish-linux/build/Debug/outDebug"
+      "cwd": "/workspaces/dish-linux/shell",
+      "program": "/workspaces/dish-linux/shell/build/Debug/outDebug"
     }
   ]
 }
