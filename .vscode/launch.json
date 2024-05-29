@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/workspaces/dish-linux/shell",
-      "program": "/workspaces/dish-linux/shell/build/Debug/outDebug"
+      "cwd": "/workspaces/dish-linux/testing",
+      "program": "/workspaces/dish-linux/testing/build/Debug/outDebug"
     }
   ]
 }
