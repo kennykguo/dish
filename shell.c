@@ -19,24 +19,22 @@ void disable_raw_mode(void) {
 
 void enable_raw_mode(void) {
     struct termios raw;
-
     tcgetattr(STDIN_FILENO, &orig_termios);
-
     // On exit, disable raw mode
     atexit(disable_raw_mode); 
-
     // Enable raw mode
     raw = orig_termios;
     cfmakeraw(&raw);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-// void enable_raw_mode(void) {
-//     struct termios termios;
-//     tcgetattr(STDIN_FILENO, &termios);
-//     cfmakeraw(&termios);
-//     tcsetattr(STDIN_FILENO, TCSAFLUSH, &termios);
-// }
+
+void enable_raw_mode(void) {
+    struct termios termios;
+    tcgetattr(STDIN_FILENO, &termios);
+    cfmakeraw(&termios);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &termios);
+}
 
 
 enum token_kind { 
@@ -114,17 +112,14 @@ void print_token_array(struct token *lexer[]) {
     printf("\n");
 }
 
+// Counts how many seperate recognizable tokens are in the input strings
 int num_tokens(char *input_string) {
-    // Counts how many seperate words are in the input strings
     int count = 0;
-
     for (int i = 0;  input_string != NULL && input_string[i] != '\0'; ++i) {
         bool is_word = false;
-
         while(is_whitespace(input_string[i])) {
             ++i;
         }
-
         // Check for special characters
         if (is_special_char(input_string[i])) {
             ++count;
@@ -147,19 +142,18 @@ int num_tokens(char *input_string) {
     return count;
 }
 
+
 int token_size(char *token) {
     int count = 0;
-
     for (int i = 0; !is_whitespace(token[i]) && !is_special_char(token[i]) && is_valid(token[i]) && token[i] != '\0'; ++i) {
         ++count;
     }
-
     return count;
 }
 
-/*
 
-If an exec_argv array is implemented:
+
+// If an exec_argv array is implemented:
 
 void free_exec_argv(char** exec_argv) {
     if (exec_argv != NULL) {
@@ -171,9 +165,6 @@ void free_exec_argv(char** exec_argv) {
 }
 
 
-*/
-
-
 
 void free_tokens(struct token *token_array[]) {
     // Token arrays will be NULL terminated
@@ -181,37 +172,31 @@ void free_tokens(struct token *token_array[]) {
         free(token_array[i]->data);
         free(token_array[i]);
     }
-
     free(token_array);
-
 }
 
 
 
-// input_string should have no whitespaces in front or after the string.
+// input_string should have no whitespaces in front or after the string
 // Returns a pointer to the exec_argv array of strings. 
 
 // Points to an array of pointers of token structures
 struct token** lexer(char* input_string) { 
-    
     // First word in the input is the command 
     bool beginning = true; 
     int size = 0;
     int start_str_index = 0; 
     int current_token = 0;
     bool is_string_token = false;
-
     // Create the exec_argv array. + 1 added for NULL (last index)
     int token_count = num_tokens(input_string);
     // printf("Num of tokens: %d\n\r", token_count);
-
     // +1 included for NULL pointer
     // Points to an array of pointers of token structures
     struct token** lexer_array = (struct token**) malloc(sizeof(struct token*) * (token_count + 1)); 
     lexer_array[token_count] = NULL;
     
     for (int i = 0; i < MAX_INPUT_SIZE; ++i) { // OLD CONDITION: && input_string[i] != '\0'
-
         if (is_whitespace(input_string[i]) && beginning) { 
             start_str_index = i + 1;
             continue;
@@ -228,18 +213,15 @@ struct token** lexer(char* input_string) {
                 case '|':
                     temp_token->kind = PIPE;
                     break;
-            
                 case '&':
                     temp_token->kind = AMPERSAND;
                     break;
-
                 // Add any other simple tokens here
 
                 default:
                     perror("ERROR. Unrecongized simple token.");
                     continue;
             }
-
             temp_token->length = 1;
             temp_token->data = data;
             lexer_array[current_token] = temp_token;
@@ -310,49 +292,37 @@ struct token** lexer(char* input_string) {
 }
 
 
-/*
 
-If exec_argv array is implemented:
-
-// Function to execute process
-
+// Function to execute user program
 int execute(char* exec_argv[], pid_t pid){ 
-
     if (pid < 0) {
         return EXIT_FAILURE;
     }
-    
     // This is the child process 
     else if (pid == 0) { 
         // printf("\r\n\r");
         execvp(exec_argv[0], exec_argv);
         perror("\rdish"); // error message
-
         // The child process should be terminated if execvp fails
         exit(EXIT_FAILURE);
         
     }
     // This is the parent process
     else if (pid > 0) { 
-
         // Wait for the child process to terminate, then continue
         wait(NULL); 
 
     }
 }
 
-*/
 
-
-int main(void) {
+// Entry into program
+int main() {
     enable_raw_mode();
+    // One reserved for file name, one for NULL pointer)
+    char **exec_argv = NULL; 
 
-    /*
-    If exec_argv array is implemented:
-    
-    char **exec_argv = NULL; // one reserved for file name, one for NULL pointer)
-
-    */
+    // Input is an array of strings
     char *input = (char *) malloc(sizeof(char) * MAX_INPUT_SIZE);
     int char_index = 0;
     char c = '\0';
@@ -360,11 +330,12 @@ int main(void) {
     printf("$ ");
     fflush(stdout);
 
+    // Read characters until the user wants to exit the program
     while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q' && c != 3) { // CTRL + C also exits program
-        
-        if (c == '\r' || c == '\n') { // Enter is pressed
-            printf("\n\r");
 
+        // Enter is pressed
+        if (c == '\r' || c == '\n') { 
+            printf("\n\r");
             // Remove end whitespaces
             while(input[char_index - 1] == ' ') {
                 --char_index;
@@ -372,27 +343,60 @@ int main(void) {
 
             // Null terminate the string
             input[char_index] = '\0';
-
             struct token** lexer_array = lexer(input);
 
             /*
-
             If an exec_argv array is implemented:
             exec_argv = // Assign it here
-
             */
 
             print_token_array(lexer_array);
             free_tokens(lexer_array);
+            // If an exec_argv array is implemented:
 
-            /* 
-
-            If an exec_argv array is implemented:
-            
             pid_t pid = fork();
-            execute(exec_argv, pid); // Pass in the exec_argv array
+            if (pid < 0) {
+                // Error occurred during fork()
+                perror("Fork failed");
+                exit(1);
+            }
 
-            */
+
+            else if (pid == 0) {
+                // Child process logic
+                printf("Child Process: My PID is %d\n", getpid());
+                printf("Child Process: My Parent's PID is %d\n", getppid());
+                
+                // Example child-specific behavior
+                printf("Child Process: Performing some task...\n");
+                sleep(2); // Simulate some work with sleep
+                printf("Child Process: Task done!\n");
+
+                // Exit the child process
+                exit(0);
+            }
+
+            else {
+                // Parent process logic
+                printf("Parent Process: My PID is %d\n", getpid());
+                printf("Parent Process: Created a child with PID %d\n", pid);
+
+                // Wait for the child process to finish
+                int status;
+                waitpid(pid, &status, 0);
+
+                if (WIFEXITED(status)) {
+                    printf("Parent Process: Child exited with status %d\n", WEXITSTATUS(status));
+                } else {
+                    printf("Parent Process: Child did not exit successfully\n");
+                }
+
+                printf("Parent Process: Continuing with other tasks...\n");
+            }
+
+
+            // Pass in the exec_argv array
+            execute(exec_argv, pid); 
 
             // Reset input and print out starting '$'
             for (int i = 0; i < MAX_INPUT_SIZE; ++i) {
@@ -401,15 +405,11 @@ int main(void) {
 
             char_index = 0;
         
-            /*
 
-            If an exec_argv array is implemented:
-
+            // If an exec_argv array is implemented:
             // Free the array 
             free_exec_argv(exec_argv);
             exec_argv = NULL;
-
-            */
  
 
             // printf("\n\r");
@@ -463,15 +463,27 @@ int main(void) {
     }
 
     free(input);
-    /*
 
-    If an exec_argv array is implemented:
-    
+    // If an exec_argv array is implemented:
     // Free the array
     free_exec_argv(exec_argv);
-
-    */
 
     return 0;
 }
 
+
+
+// Forking: We call fork() to create a new process. This creates a duplicate process.
+
+// Error Handling: If fork() returns -1, an error occurred, and we print an error message and exit.
+// Child Process (pid == 0):
+
+// The child process has a pid of 0 returned from fork().
+// The child prints its own PID and the PID of its parent (obtained by getppid()).
+// It simulates some work by sleeping for a few seconds, then exits with a status of 0.
+// Parent Process (pid > 0):
+
+// The parent process receives the PID of the child as a return value from fork().
+// The parent process waits for the child to finish using waitpid(), which helps prevent zombie processes.
+// The parent checks the exit status of the child and handles the exit status information accordingly.
+// Common Exit: Both parent and child execute the final printf() statement, showing their respective PID and indicating they're exiting.
